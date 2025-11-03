@@ -13,9 +13,10 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
+    "jsx": "react",
     "outDir": "./build"
   },
-  "include": ["node.ts"],
+  "include": ["node.ts", "App.tsx"],
   "exclude": ["node_modules", "dist"]
 }
 
