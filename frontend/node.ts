@@ -1,48 +1,60 @@
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
-import { App } from './App.js';
+import { App } from './components/App.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const distDir = path.resolve(process.cwd(), 'dist');
 
 const PORT = process.env.PORT || 3000;
 
 const server = http.createServer((req, res) => {
-  // SSR for main route
-  if (req.url === '/' || req.url === '/index.html') {
-    try {
-      // Read the HTML template from dist/index.html
-      const templatePath = path.join(__dirname, '..', 'dist', 'index.html');
-      const htmlTemplate = fs.readFileSync(templatePath, 'utf-8');
-      
-      // Render React app to string
-      const appHtml = ReactDOMServer.renderToString(React.createElement(App));
-      
-      // Inject the SSR content into the template
-      const html = htmlTemplate.replace(
-        '<div id="app"></div>',
-        `<div id="app">${appHtml}</div>`
-      );
-      
-      res.statusCode = 200;
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.end(html);
-      return;
-    } catch (error) {
-      res.statusCode = 500;
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.end(`<h1>500 - SSR Error</h1><p>${error instanceof Error ? error.message : 'Unknown error'}</p>`);
-      return;
-    }
+  // SSR for main route - accepts POST request with tasks
+  if ((req.url === '/' || req.url === '/index.html') && req.method === 'POST') {
+    let body = '';
+    
+    req.on('data', (chunk) => {
+      body += chunk.toString();
+    });
+    
+    req.on('end', () => {
+      try {
+        // Parse tasks from POST body
+        const { tasks = [], error = null } = JSON.parse(body);
+        
+        // Read the HTML template from dist/index.html
+        const templatePath = path.join(distDir, 'index.html');
+        const htmlTemplate = fs.readFileSync(templatePath, 'utf-8');
+        
+        // Render React app to string with server-side data
+        const appHtml = ReactDOMServer.renderToString(
+          React.createElement(App, { initialTasks: tasks, initialError: error })
+        );
+        
+        // Inject the SSR content and initial data into the template
+        const initialData = JSON.stringify({ tasks, error });
+        const html = htmlTemplate
+          .replace(
+            '<div id="app"></div>',
+            `<div id="app">${appHtml}</div>
+            <script>window.__INITIAL_DATA__ = ${initialData};</script>`
+          );
+        
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.end(html);
+      } catch (error) {
+        res.statusCode = 500;
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.end(`<h1>500 - SSR Error</h1><p>${error instanceof Error ? error.message : 'Unknown error'}</p>`);
+      }
+    });
+    return;
   }
   
   // Serve static assets from the dist folder
-  const filePath = path.join(__dirname, '..', 'dist', req.url || '');
+  const filePath = path.join(distDir, req.url || '');
   
   // Determine content type based on file extension
   const extname = path.extname(filePath);
