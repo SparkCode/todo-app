@@ -34,6 +34,28 @@ export function App({ initialTasks = [], initialError = null }: AppProps) {
     }
   };
 
+  const handleToggleTask = async (taskId: number, completed: boolean) => {
+    try {
+      const response = await fetch(`/api/toggle-task/${taskId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ completed }),
+      });
+
+      if (response.ok) {
+        setTasks(tasks.map(task =>
+          task.id === taskId ? { ...task, completed } : task
+        ));
+      } else {
+        console.error('Failed to toggle task');
+      }
+    } catch (error) {
+      console.error('Error toggling task:', error);
+    }
+  };
+
   return (
     <div className="app-container">
       <header className="app-header">
@@ -45,7 +67,7 @@ export function App({ initialTasks = [], initialError = null }: AppProps) {
       {!initialError && (
         <>
           <TaskForm onTaskCreated={setTasks} />
-          <TaskList tasks={tasks} onDeleteTask={handleDeleteTask} />
+          <TaskList tasks={tasks} onDeleteTask={handleDeleteTask} onToggleTask={handleToggleTask} />
         </>
       )}
     </div>
