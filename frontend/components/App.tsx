@@ -25,7 +25,7 @@ export function App({ initialTasks = [], initialError = null }: AppProps) {
       });
 
       if (response.ok) {
-        setTasks(tasks.filter(task => task.id !== taskId));
+        setTasks(currentTasks => currentTasks.filter(task => task.id !== taskId));
       } else {
         console.error('Failed to delete task');
       }
@@ -45,7 +45,7 @@ export function App({ initialTasks = [], initialError = null }: AppProps) {
       });
 
       if (response.ok) {
-        setTasks(tasks.map(task =>
+        setTasks(currentTasks => currentTasks.map(task =>
           task.id === taskId ? { ...task, completed } : task
         ));
       } else {
