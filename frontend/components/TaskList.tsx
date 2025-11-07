@@ -5,6 +5,7 @@ interface Task {
   task_header: string;
   task_description: string;
   completed: boolean;
+  deadline?: string;
 }
 
 interface TaskListProps {
@@ -47,6 +48,11 @@ export function TaskList({ tasks, onDeleteTask, onToggleTask }: TaskListProps) {
             {task.task_description && (
               <p className="task-description">
                 {task.task_description}
+              </p>
+            )}
+            {task.deadline && (
+              <p className="task-deadline">
+                📅 Deadline: {new Date(task.deadline).toLocaleDateString()}
               </p>
             )}
             <div className="task-id">

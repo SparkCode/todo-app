@@ -6,6 +6,7 @@ interface Task {
   task_header: string;
   task_description: string;
   completed: boolean;
+  deadline?: string;
 }
 
 interface TaskFormProps {
@@ -16,6 +17,7 @@ export function TaskForm({ onTaskCreated }: TaskFormProps) {
   const [formData, setFormData] = useState({
     task_header: '',
     task_description: '',
+    deadline: '',
   });
   const [formError, setFormError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -64,6 +66,7 @@ export function TaskForm({ onTaskCreated }: TaskFormProps) {
           task_header: formData.task_header.trim(),
           task_description: formData.task_description.trim(),
           completed: false,
+          deadline: formData.deadline || null,
         }),
       });
 
@@ -73,7 +76,7 @@ export function TaskForm({ onTaskCreated }: TaskFormProps) {
       }
 
       setStatusMessage('Task created successfully.');
-      setFormData({ task_header: '', task_description: '' });
+      setFormData({ task_header: '', task_description: '', deadline: '' });
       await fetchTasks();
     } catch (error) {
       setFormError(error instanceof Error ? error.message : 'Failed to create task');
@@ -114,6 +117,20 @@ export function TaskForm({ onTaskCreated }: TaskFormProps) {
             className="form-textarea"
             placeholder="Optional task description"
             rows={3}
+          />
+        </div>
+        <div className="form-field">
+          <label className="form-label" htmlFor="deadline">
+            Deadline
+          </label>
+          <input
+            id="deadline"
+            name="deadline"
+            type="date"
+            value={formData.deadline}
+            onChange={handleInputChange}
+            disabled={isSubmitting}
+            className="form-input"
           />
         </div>
         <button type="submit" className="submit-button" disabled={isSubmitting}>

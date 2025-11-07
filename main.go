@@ -28,6 +28,7 @@ func initDB() error {
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		task_header TEXT NOT NULL,
 		task_description TEXT,
+		deadline DATE,
 		completed BOOLEAN NOT NULL DEFAULT FALSE
 	);`
 
@@ -76,9 +77,10 @@ func main() {
 				return
 			}
 			var task struct {
-				TaskHeader      string `json:"task_header"`
-				TaskDescription string `json:"task_description"`
-				Completed       bool   `json:"completed"`
+				TaskHeader      string  `json:"task_header"`
+				TaskDescription string  `json:"task_description"`
+				Deadline        *string `json:"deadline"`
+				Completed       bool    `json:"completed"`
 			}
 			err = json.Unmarshal(body, &task)
 			if err != nil {
@@ -89,7 +91,7 @@ func main() {
 				http.Error(w, "task_header is required", http.StatusBadRequest)
 				return
 			}
-			_, err = db.Exec("INSERT INTO tasks (task_header, task_description, completed) VALUES (?, ?, ?)", task.TaskHeader, task.TaskDescription, task.Completed)
+			_, err = db.Exec("INSERT INTO tasks (task_header, task_description, deadline, completed) VALUES (?, ?, ?, ?)", task.TaskHeader, task.TaskDescription, task.Deadline, task.Completed)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -208,20 +210,25 @@ func main() {
 			}
 
 			type Task struct {
-				ID              int    `json:"id"`
-				TaskHeader      string `json:"task_header"`
-				TaskDescription string `json:"task_description"`
-				Completed       bool   `json:"completed"`
+				ID              int     `json:"id"`
+				TaskHeader      string  `json:"task_header"`
+				TaskDescription string  `json:"task_description"`
+				Deadline        *string `json:"deadline"`
+				Completed       bool    `json:"completed"`
 			}
 
 			var tasks []Task
 
 			for tasksRows.Next() {
 				var task Task
-				err := tasksRows.Scan(&task.ID, &task.TaskHeader, &task.TaskDescription, &task.Completed)
+				var deadline sql.NullString
+				err := tasksRows.Scan(&task.ID, &task.TaskHeader, &task.TaskDescription, &deadline, &task.Completed)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
+				}
+				if deadline.Valid {
+					task.Deadline = &deadline.String
 				}
 				tasks = append(tasks, task)
 			}
@@ -247,10 +254,11 @@ func main() {
 		tasksRows, err := db.Query("SELECT * FROM tasks")
 
 		type Task struct {
-			ID              int    `json:"id"`
-			TaskHeader      string `json:"task_header"`
-			TaskDescription string `json:"task_description"`
-			Completed       bool   `json:"completed"`
+			ID              int     `json:"id"`
+			TaskHeader      string  `json:"task_header"`
+			TaskDescription string  `json:"task_description"`
+			Deadline        *string `json:"deadline"`
+			Completed       bool    `json:"completed"`
 		}
 
 		var tasks []Task
@@ -261,10 +269,14 @@ func main() {
 		} else {
 			for tasksRows.Next() {
 				var task Task
-				err := tasksRows.Scan(&task.ID, &task.TaskHeader, &task.TaskDescription, &task.Completed)
+				var deadline sql.NullString
+				err := tasksRows.Scan(&task.ID, &task.TaskHeader, &task.TaskDescription, &deadline, &task.Completed)
 				if err != nil {
 					errorMsg = err.Error()
 					break
+				}
+				if deadline.Valid {
+					task.Deadline = &deadline.String
 				}
 				tasks = append(tasks, task)
 			}
