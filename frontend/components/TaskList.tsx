@@ -10,9 +10,10 @@ interface Task {
 interface TaskListProps {
   tasks: Task[];
   onDeleteTask: (taskId: number) => void;
+  onToggleTask: (taskId: number, completed: boolean) => void;
 }
 
-export function TaskList({ tasks, onDeleteTask }: TaskListProps) {
+export function TaskList({ tasks, onDeleteTask, onToggleTask }: TaskListProps) {
   if (tasks.length === 0) {
     return <div className="empty-message">No tasks yet. Create your first task!</div>;
   }
@@ -29,7 +30,7 @@ export function TaskList({ tasks, onDeleteTask }: TaskListProps) {
               <input
                 type="checkbox"
                 checked={task.completed}
-                readOnly
+                onChange={() => onToggleTask(task.id, !task.completed)}
                 className="task-checkbox"
               />
               <h3 className={`task-title ${task.completed ? 'completed' : ''}`}>

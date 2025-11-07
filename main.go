@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -141,6 +142,62 @@ func main() {
 		}
 	})
 
+	http.HandleFunc("/api/toggle-task/", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "PATCH":
+			parts := strings.Split(r.URL.Path, "/")
+			if len(parts) < 4 || parts[3] == "" {
+				http.Error(w, "Task ID is required", http.StatusBadRequest)
+				return
+			}
+
+			idStr := parts[3]
+			id, err := strconv.Atoi(idStr)
+			if err != nil {
+				http.Error(w, "Invalid task ID", http.StatusBadRequest)
+				return
+			}
+
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			var requestBody struct {
+				Completed bool `json:"completed"`
+			}
+			err = json.Unmarshal(body, &requestBody)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			result, err := db.Exec("UPDATE tasks SET completed = ? WHERE id = ?", requestBody.Completed, id)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			rowsAffected, err := result.RowsAffected()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			if rowsAffected == 0 {
+				http.Error(w, "Task not found", http.StatusNotFound)
+				return
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]string{"message": "Task updated successfully"})
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
 	http.HandleFunc("/api/get-tasks", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "GET":
@@ -257,5 +314,8 @@ func main() {
 		w.Write(body)
 	})
 
+	fmt.Println("server started on the port :8080")
+
 	log.Fatal(http.ListenAndServe(":8080", nil))
+
 }

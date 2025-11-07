@@ -25,12 +25,34 @@ export function App({ initialTasks = [], initialError = null }: AppProps) {
       });
 
       if (response.ok) {
-        setTasks(tasks.filter(task => task.id !== taskId));
+        setTasks(currentTasks => currentTasks.filter(task => task.id !== taskId));
       } else {
         console.error('Failed to delete task');
       }
     } catch (error) {
       console.error('Error deleting task:', error);
+    }
+  };
+
+  const handleToggleTask = async (taskId: number, completed: boolean) => {
+    try {
+      const response = await fetch(`/api/toggle-task/${taskId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ completed }),
+      });
+
+      if (response.ok) {
+        setTasks(currentTasks => currentTasks.map(task =>
+          task.id === taskId ? { ...task, completed } : task
+        ));
+      } else {
+        console.error('Failed to toggle task');
+      }
+    } catch (error) {
+      console.error('Error toggling task:', error);
     }
   };
 
@@ -45,7 +67,7 @@ export function App({ initialTasks = [], initialError = null }: AppProps) {
       {!initialError && (
         <>
           <TaskForm onTaskCreated={setTasks} />
-          <TaskList tasks={tasks} onDeleteTask={handleDeleteTask} />
+          <TaskList tasks={tasks} onDeleteTask={handleDeleteTask} onToggleTask={handleToggleTask} />
         </>
       )}
     </div>

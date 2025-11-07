@@ -21,7 +21,9 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       try {
         // Parse tasks from POST body
-        const { tasks = [], error = null } = JSON.parse(body);
+        const parsed = JSON.parse(body);
+        const tasks = parsed.tasks ?? [];
+        const error = parsed.error ?? null;
         
         // Read the HTML template from dist/index.html
         const templatePath = path.join(distDir, 'index.html');
